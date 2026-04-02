@@ -1,0 +1,9 @@
+[
+  { "id": 1, "khach_hang": "kh_action1", "ten_phim": "John Wick: Chapter 4", "suất_chiếu": "18:00", "ngay": "2024-03-20", "gia_ve": 95000 },
+  { "id": 2, "khach_hang": "kh_action1", "ten_phim": "The Dark Knight", "suất_chiếu": "20:30", "ngay": "2024-03-20", "gia_ve": 95000 },
+  { "id": 3, "khach_hang": "kh_anime1", "ten_phim": "Your Name", "suất_chiếu": "15:00", "ngay": "2024-03-21", "gia_ve": 85000 },
+  { "id": 4, "khach_hang": "kh_anime1", "ten_phim": "Suzume", "suất_chiếu": "16:45", "ngay": "2024-03-21", "gia_ve": 85000 },
+  { "id": 5, "khach_hang": "kh_horror1", "ten_phim": "The Conjuring", "suất_chiếu": "22:00", "ngay": "2024-03-21", "gia_ve": 90000 },
+  { "id": 6, "khach_hang": "admin", "ten_phim": "Inception", "suất_chiếu": "19:00", "ngay": "2024-03-22", "gia_ve": 100000 },
+  { "id": 7, "khach_hang": "kh_action2", "ten_phim": "Extraction 2", "suất_chiếu": "21:00", "ngay": "2024-03-22", "gia_ve": 95000 }
+]
