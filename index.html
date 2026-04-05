@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng Nhập - Hệ Thống Cinema</title>
+    <style>
+        /* Thiết lập hình nền rạp phim toàn màn hình */
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0;
+            background: url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1920&auto=format&fit=crop') no-repeat center center;
+            background-size: cover;
+        }
+
+        /* Lớp phủ màu đen mờ để làm nổi bật khung đăng nhập */
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1;
+        }
+
+        /* Thiết kế khung đăng nhập */
+        .login-card { 
+            position: relative;
+            z-index: 2;
+            background: rgba(255, 255, 255, 0.1); 
+            backdrop-filter: blur(12px); 
+            -webkit-backdrop-filter: blur(12px);
+            padding: 40px; 
+            border-radius: 15px; 
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5); 
+            width: 350px; 
+            text-align: center;
+        }
+
+        h2 { 
+            color: #ffffff; 
+            margin-bottom: 25px; 
+            text-transform: uppercase; 
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .icon { font-size: 40px; margin-bottom: -10px; }
+
+        input { 
+            width: 100%; 
+            padding: 14px; 
+            margin: 12px 0; 
+            background: rgba(255, 255, 255, 0.85);
+            border: none; 
+            border-radius: 8px; 
+            box-sizing: border-box; 
+            font-size: 15px;
+            outline: none;
+            transition: 0.3s;
+        }
+        input:focus {
+            background: #ffffff;
+            box-shadow: 0 0 10px rgba(229, 9, 20, 0.5);
+        }
+
+        button { 
+            width: 100%; 
+            padding: 14px; 
+            background: linear-gradient(to right, #e50914, #b81d24); 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: bold;
+            margin-top: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(229, 9, 20, 0.4);
+        }
+        button:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 6px 20px rgba(229, 9, 20, 0.6);
+        }
+
+        .footer-text { 
+            margin-top: 25px; 
+            font-size: 12px; 
+            color: #cccccc; 
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay"></div>
+
+    <div class="login-card">
+        <div class="icon">🎬</div>
+        <h2>CINEMA LOGIN</h2>
+        <input type="text" id="user" placeholder="Tên đăng nhập (admin / kh_action1...)">
+        <input type="password" id="pass" placeholder="Mật khẩu">
+        <button onclick="handleLogin()">ĐĂNG NHẬP</button>
+        <div class="footer-text">Hệ Thống Quản Lý Rạp Chiếu Phim V2.0</div>
+    </div>
+
+    <script>
+    // ==============================================================
+    // 1. TÍNH NĂNG: BẮT SỰ KIỆN NHẤN PHÍM ENTER ĐỂ ĐĂNG NHẬP
+    // ==============================================================
+    document.addEventListener("DOMContentLoaded", function() {
+        const userInput = document.getElementById('user');
+        const passInput = document.getElementById('pass');
+
+        // Hàm kiểm tra phím Enter
+        function handleEnterKey(event) {
+            if (event.key === "Enter") {
+                handleLogin(); // Tự động gọi hàm đăng nhập
+            }
+        }
+
+        // Gắn sự kiện lắng nghe phím cho cả ô Tài khoản và Mật khẩu
+        userInput.addEventListener("keypress", handleEnterKey);
+        passInput.addEventListener("keypress", handleEnterKey);
+    });
+
+    // ==============================================================
+    // 2. TÍNH NĂNG: XỬ LÝ ĐĂNG NHẬP GIẢ LẬP (KHÔNG CẦN BACKEND)
+    // ==============================================================
+    function handleLogin() {
+        const username = document.getElementById('user').value.trim();
+        const password = document.getElementById('pass').value.trim();
+
+        if (!username || !password) {
+            alert("Vui lòng nhập đầy đủ tài khoản và mật khẩu!");
+            return;
+        }
+
+        // CHUẨN HÓA: Dùng LocalStorage lưu thông tin thay cho fetch API
+        // Phân loại: Nếu gõ "admin" -> Vào trang quản lý | Gõ chữ khác -> Vào trang khách hàng
+        
+        if (username.toLowerCase() === 'admin') {
+            // LƯU THÔNG TIN ADMIN
+            localStorage.setItem('cinema_user', 'Quản Trị Viên Hệ Thống');
+            localStorage.setItem('cinema_username', 'admin'); 
+            localStorage.setItem('userRole', 'Quản lý');
+            
+            alert("Đăng nhập quyền Admin thành công!");
+            window.location.href = 'admin.html'; 
+            
+        } else {
+            // LƯU THÔNG TIN KHÁCH HÀNG (Dùng để chạy AI gợi ý và Lịch sử vé)
+            localStorage.setItem('cinema_user', 'Khách Hàng VIP');
+            localStorage.setItem('cinema_username', username); 
+            localStorage.setItem('userRole', 'Khách hàng');
+            
+            alert("Đăng nhập thành công! Chào mừng " + username);
+            window.location.href = 'user.html'; 
+        }
+    }
+    </script>
+</body>
+</html>
