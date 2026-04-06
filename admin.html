@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Trị - Hệ Thống Cinema</title>
+    <style>
+        /* ================= BỐ CỤC CHUNG ================= */
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #0f0f0f; color: #ffffff; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        * { box-sizing: border-box; }
+        .hidden { display: none !important; }
+
+        /* ================= SIDEBAR (CỘT TRÁI) ================= */
+        .sidebar { width: 260px; background-color: #000000; border-right: 1px solid #333; display: flex; flex-direction: column; padding-top: 20px; }
+        .sidebar-logo { color: #e50914; font-size: 24px; font-weight: 900; text-align: center; letter-spacing: 2px; margin-bottom: 30px; text-shadow: 0 0 10px rgba(229, 9, 20, 0.4); }
+        .menu-item { padding: 15px 25px; color: #aaa; text-decoration: none; font-size: 16px; font-weight: bold; display: flex; align-items: center; cursor: pointer; transition: 0.3s; border-left: 4px solid transparent; }
+        .menu-item:hover, .menu-item.active { background-color: #1a1a1a; color: #ffffff; border-left: 4px solid #e50914; }
+        .menu-item i { margin-right: 15px; font-size: 18px; width: 20px; text-align: center; }
+
+        /* ================= KHU VỰC CHÍNH (BÊN PHẢI) ================= */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        .admin-header { background-color: #111111; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
+        .user-info { display: flex; align-items: center; gap: 15px; }
+        .user-name { font-weight: bold; color: #fff; font-size: 16px; }
+        .user-role { font-size: 12px; color: #ffc107; background: rgba(255, 193, 7, 0.1); padding: 3px 8px; border-radius: 12px; border: 1px solid #ffc107; }
+        .btn-logout { background-color: transparent; color: #e50914; border: 1px solid #e50914; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-logout:hover { background-color: #e50914; color: white; }
+
+        .content-area { padding: 30px; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        h2 { margin: 0; color: #fff; font-size: 24px; border-left: 5px solid #e50914; padding-left: 10px; text-transform: uppercase; }
+
+        .btn-add { background-color: #e50914; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-add:hover { background-color: #ff0f1f; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(229, 9, 20, 0.4); }
+
+        /* ================= TABLE ================= */
+        table { width: 100%; border-collapse: collapse; background-color: #111111; border-radius: 8px; overflow: hidden; border: 1px solid #333; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #222; }
+        th { background-color: #1a1a1a; color: #e50914; font-weight: bold; text-transform: uppercase; font-size: 14px; }
+        tr:hover { background-color: #1a1a1a; }
+        .img-preview { width: 60px; height: 80px; object-fit: cover; border-radius: 5px; border: 1px solid #444; }
+
+        .btn-action { padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 13px; margin-right: 5px; }
+        .btn-edit { background-color: #ffc107; color: #000; }
+        .btn-edit:hover { background-color: #e0a800; }
+        .btn-delete { background-color: #dc3545; color: white; }
+        .btn-delete:hover { background-color: #c82333; }
+        
+        .status-badge { padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; }
+        .status-success { background: rgba(40, 167, 69, 0.2); color: #28a745; border: 1px solid #28a745; }
+        .status-warning { background: rgba(255, 193, 7, 0.2); color: #ffc107; border: 1px solid #ffc107; }
+        .status-danger { background: rgba(220, 53, 69, 0.2); color: #dc3545; border: 1px solid #dc3545; }
+
+        /* ================= MODAL ================= */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(5px); }
+        .modal-content { background-color: #141414; width: 600px; border-radius: 10px; padding: 30px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto; }
+        .modal-title { margin-top: 0; color: #e50914; font-size: 22px; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 25px; font-weight: 900; }
+        
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group.full-width { grid-column: span 2; }
+        
+        .form-group label { color: #aaa; margin-bottom: 8px; font-size: 14px; font-weight: bold; }
+        .form-group input, .form-group select, .form-group textarea { background-color: #222; border: 1px solid #444; color: white; padding: 12px 15px; border-radius: 5px; font-size: 15px; font-family: inherit; transition: 0.3s; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #e50914; outline: none; box-shadow: 0 0 0 2px rgba(229, 9, 20, 0.2); }
+        .form-group textarea { resize: vertical; min-height: 100px; }
+
+        .modal-actions { display: flex; justify-content: flex-end; gap: 15px; margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; }
+        .btn-cancel { background-color: transparent; color: #aaa; border: 1px solid #aaa; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-cancel:hover { background-color: #333; color: white; }
+        .btn-save { background-color: #e50914; color: white; border: none; padding: 10px 25px; border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-save:hover { background-color: #ff0f1f; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-logo">🎬 CINEMA ADMIN</div>
+        <div class="menu-item active" onclick="showSection('phim', this)">🎬 Quản Lý Phim</div>
+        <div class="menu-item" onclick="showSection('phong-chieu', this)">🏠 Quản Lý Phòng Chiếu</div>
+        <div class="menu-item" onclick="showSection('suat-chieu', this)">⏰ Quản Lý Suất Chiếu</div>
+        <div class="menu-item" onclick="showSection('ve', this)">🎟️ Quản Lý Vé Đặt</div>
+    </div>
+
+    <div class="main-content">
+        <div class="admin-header">
+            <div style="color: #aaa; font-size: 14px;">Chế độ dữ liệu: Tệp JSON (Cục bộ)</div>
+            <div class="user-info">
+                <div style="text-align: right;">
+                    <div id="adminNameDisplay" class="user-name">Đang tải...</div>
+                    <span id="adminRoleDisplay" class="user-role">Quản lý</span>
+                </div>
+                <button class="btn-logout" onclick="logout()">Đăng Xuất</button>
+            </div>
+        </div>
+
+        <div class="content-area">
+            
+            <div id="section-phim">
+                <div class="page-header">
+                    <h2>Danh Sách Phim</h2>
+                    <button class="btn-add" onclick="openModal('add')">+ THÊM PHIM MỚI</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">ID</th>
+                            <th style="width: 80px;">Poster</th>
+                            <th>Tên Phim</th>
+                            <th>Thể Loại</th>
+                            <th>Thời Lượng</th>
+                            <th style="text-align: center;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="movieTableBody">
+                        <tr><td colspan="6" style="text-align: center; color: #aaa;">Đang tải dữ liệu...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="section-phong-chieu" class="hidden">
+                <div class="page-header">
+                    <h2>Danh Sách Phòng Chiếu</h2>
+                    <button class="btn-add" onclick="openPhongModal()">+ THÊM PHÒNG CHIẾU</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mã Phòng</th>
+                            <th>Tên Phòng</th>
+                            <th>Loại Phòng</th>
+                            <th>Tổng Số Ghế</th>
+                            <th style="text-align: center;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="phongChieuTableBody">
+                        <tr><td colspan="5" style="text-align: center; color: #aaa;">Đang tải dữ liệu...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="section-suat-chieu" class="hidden">
+                <div class="page-header">
+                    <h2>Danh Sách Suất Chiếu</h2>
+                    <button class="btn-add" onclick="openSuatModal()">+ THÊM SUẤT CHIẾU</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mã Suất</th>
+                            <th>Tên Phim</th>
+                            <th>Phòng Chiếu</th>
+                            <th>Thời Gian Bắt Đầu</th>
+                            <th>Giá Vé</th>
+                            <th style="text-align: center;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="suatChieuTableBody">
+                        <tr><td colspan="6" style="text-align: center; color: #aaa;">Đang tải dữ liệu...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="section-ve" class="hidden">
+                <div class="page-header">
+                    <h2>Danh Sách Vé Đã Đặt</h2>
+                    <button class="btn-add" onclick="openVeModal()">+ THÊM VÉ</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mã Vé</th>
+                            <th>Khách Hàng</th>
+                            <th>Phim</th>
+                            <th>Thời Gian Chiếu</th>
+                            <th>Giá</th>
+                            <th>Trạng Thái</th>
+                            <th style="text-align: center;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="veTableBody">
+                        <tr><td colspan="7" style="text-align: center; color: #aaa;">Đang tải dữ liệu...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="movieModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 id="modalTitle" class="modal-title">THÊM PHIM MỚI</h2>
+            <input type="hidden" id="movieId">
+            
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label>Tên Phim</label>
+                    <input type="text" id="m_title" placeholder="Nhập tên phim...">
+                </div>
+                <div class="form-group">
+                    <label>Thể Loại</label>
+                    <input type="text" id="m_genre" placeholder="VD: Hành động, Viễn tưởng">
+                </div>
+                <div class="form-group">
+                    <label>Thời Lượng (Phút)</label>
+                    <input type="number" id="m_duration" placeholder="VD: 120">
+                </div>
+                <div class="form-group full-width">
+                    <label>Link Ảnh Bìa (URL)</label>
+                    <input type="text" id="m_poster" placeholder="https://...">
+                </div>
+                <div class="form-group full-width">
+                    <label>Tóm Tắt Nội Dung</label>
+                    <textarea id="m_desc" placeholder="Nhập tóm tắt phim..."></textarea>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal()">HUỶ BỎ</button>
+                <button class="btn-save" onclick="saveMovie()">LƯU LẠI</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="phongModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 id="phongModalTitle" class="modal-title">THÊM PHÒNG CHIẾU</h2>
+            <input type="hidden" id="p_id">
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label>Tên Phòng</label>
+                    <input type="text" id="p_ten" placeholder="Ví dụ: Phòng 01">
+                </div>
+                <div class="form-group">
+                    <label>Loại Phòng</label>
+                    <select id="p_loaiphong">
+                        <option value="Tiêu chuẩn">Tiêu chuẩn</option>
+                        <option value="VIP">VIP</option>
+                        <option value="IMAX">IMAX</option>
+                        <option value="3D">3D</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tổng Số Ghế</label>
+                    <input type="number" id="p_tongsoghe" placeholder="Ví dụ: 100" min="10" value="100">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closePhongModal()">HỦY BỎ</button>
+                <button class="btn-save" onclick="savePhong()">LƯU PHÒNG</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="suatModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 id="suatModalTitle" class="modal-title">THÊM SUẤT CHIẾU</h2>
+            <input type="hidden" id="s_id">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Mã Phim</label>
+                    <input type="number" id="s_maphim" placeholder="Nhập ID phim (VD: 1)">
+                </div>
+                <div class="form-group">
+                    <label>Mã Phòng</label>
+                    <input type="number" id="s_maphong" placeholder="Nhập ID phòng (VD: 1)">
+                </div>
+                <div class="form-group full-width">
+                    <label>Thời Gian Chiếu</label>
+                    <input type="datetime-local" id="s_thoigian"> 
+                </div>
+                <div class="form-group full-width">
+                    <label>Giá Vé (VNĐ)</label>
+                    <input type="number" id="s_giave" placeholder="VD: 90000">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeSuatModal()">HỦY BỎ</button>
+                <button class="btn-save" onclick="saveSuat()">LƯU SUẤT CHIẾU</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="veModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 id="veModalTitle" class="modal-title">ĐẶT VÉ MỚI</h2>
+            <input type="hidden" id="v_id">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Mã Khách Hàng</label>
+                    <input type="number" id="v_makh" placeholder="Nhập ID Khách (VD: 1)">
+                </div>
+                <div class="form-group">
+                    <label>Mã Suất Chiếu</label>
+                    <input type="number" id="v_masuat" placeholder="Nhập ID Suất Chiếu">
+                </div>
+                <div class="form-group">
+                    <label>Mã Ghế</label>
+                    <input type="number" id="v_maghe" placeholder="Nhập ID Ghế (VD: 15)">
+                </div>
+                <div class="form-group">
+                    <label>Trạng Thái</label>
+                    <select id="v_trangthai">
+                        <option value="Đã thanh toán">Đã thanh toán</option>
+                        <option value="Chưa thanh toán">Chưa thanh toán</option>
+                        <option value="Đã hủy">Đã hủy</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeVeModal()">HỦY BỎ</button>
+                <button class="btn-save" onclick="saveVe()">LƯU VÉ</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================= KIỂM TRA BẢO MẬT (KHÓA CỬA ADMIN) =================
+        let adminName = localStorage.getItem('cinema_user');
+        let userRole = localStorage.getItem('userRole');
+
+        // Khởi tạo tài khoản mẫu để bạn không bị lỗi trang khi chưa đăng nhập
+        if (!adminName || !userRole) {
+            localStorage.setItem('cinema_user', 'Quản Trị Viên');
+            localStorage.setItem('userRole', 'Quản lý');
+            adminName = 'Quản Trị Viên';
+            userRole = 'Quản lý';
+        }
+
+        document.getElementById('adminNameDisplay').innerText = adminName;
+        document.getElementById('adminRoleDisplay').innerText = userRole;
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        // ================= BIẾN TOÀN CỤC CHỨA DỮ LIỆU JSON =================
+        let dbData = { Phim: [], Phong_Chieu: [], Suat_Chieu: [], Ve: [] };
+        let moviesList = [];
+
+        // Tự động load dữ liệu từ file JSON ngay khi mở trang
+        async function loadData() {
+            try {
+                const response = await fetch('phim.json');
+                dbData = await response.json();
+                
+                // Đề phòng trường hợp file JSON chưa có mảng tương ứng
+                if (!dbData.Phim) dbData.Phim = [];
+                if (!dbData.Phong_Chieu) dbData.Phong_Chieu = [];
+                if (!dbData.Suat_Chieu) dbData.Suat_Chieu = [];
+                if (!dbData.Ve) dbData.Ve = [];
+
+                moviesList = dbData.Phim;
+                renderMovies(moviesList);
+            } catch (error) {
+                console.error("Lỗi khi tải file phim.json:", error);
+                document.getElementById('movieTableBody').innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Không tìm thấy file phim.json hoặc bạn cần chạy qua Live Server!</td></tr>';
+            }
+        }
+
+        // ================= CHUYỂN ĐỔI TAB GIAO DIỆN =================
+        function showSection(sectionId, element) {
+            document.getElementById('section-phim').classList.add('hidden');
+            document.getElementById('section-phong-chieu').classList.add('hidden');
+            document.getElementById('section-suat-chieu').classList.add('hidden');
+            document.getElementById('section-ve').classList.add('hidden');
+
+            const menuItems = document.querySelectorAll('.menu-item');
+            menuItems.forEach(item => item.classList.remove('active'));
+
+            document.getElementById('section-' + sectionId).classList.remove('hidden');
+            element.classList.add('active');
+
+            if (sectionId === 'phim') fetchMovies();
+            if (sectionId === 'phong-chieu') fetchPhongChieu();
+            if (sectionId === 'suat-chieu') fetchSuatChieu();
+            if (sectionId === 've') fetchVe();
+        }
+
+        // ================= XỬ LÝ QUẢN LÝ PHIM =================
+        function fetchMovies() {
+            renderMovies(dbData.Phim);
+        }
+
+        function renderMovies(movies) {
+            const tbody = document.getElementById('movieTableBody');
+            tbody.innerHTML = '';
+            movies.forEach(m => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-weight:bold; color:#e50914;">#${m.Ma_Phim}</td>
+                        <td><img src="${m.Anh_Bia}" class="img-preview" alt="Poster"></td>
+                        <td style="font-weight:bold;">${m.Ten_Phim}</td>
+                        <td>${m.The_Loai}</td>
+                        <td style="color:#ffc107;">${m.Thoi_Luong} Phút</td>
+                        <td style="text-align: center;">
+                            <button class="btn-action btn-edit" onclick="openModal('edit', ${m.Ma_Phim})">Sửa</button>
+                            <button class="btn-action btn-delete" onclick="deleteMovie(${m.Ma_Phim})">Xoá</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openModal(type, id = null) {
+            const modal = document.getElementById('movieModal');
+            modal.classList.remove('hidden');
+
+            if (type === 'add') {
+                document.getElementById('modalTitle').innerText = 'THÊM PHIM MỚI';
+                document.getElementById('movieId').value = '';
+                document.getElementById('m_title').value = '';
+                document.getElementById('m_genre').value = '';
+                document.getElementById('m_duration').value = '';
+                document.getElementById('m_desc').value = '';
+                document.getElementById('m_poster').value = '';
+            } else {
+                document.getElementById('modalTitle').innerText = 'CHỈNH SỬA PHIM';
+                document.getElementById('movieId').value = id;
+                const movie = dbData.Phim.find(m => m.Ma_Phim === id);
+                if (movie) {
+                    document.getElementById('m_title').value = movie.Ten_Phim || '';
+                    document.getElementById('m_genre').value = movie.The_Loai || '';
+                    document.getElementById('m_duration').value = movie.Thoi_Luong || '';
+                    document.getElementById('m_desc').value = movie.Tom_Tat || '';
+                    document.getElementById('m_poster').value = movie.Anh_Bia || '';
+                }
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('movieModal').classList.add('hidden');
+        }
+
+        function saveMovie() {
+            const id = document.getElementById('movieId').value;
+            const isEdit = id !== '';
+            
+            const payload = {
+                Ma_Phim: isEdit ? parseInt(id) : (dbData.Phim.length > 0 ? Math.max(...dbData.Phim.map(m => m.Ma_Phim)) + 1 : 1),
+                Ten_Phim: document.getElementById('m_title').value,
+                The_Loai: document.getElementById('m_genre').value,
+                Thoi_Luong: parseInt(document.getElementById('m_duration').value),
+                Tom_Tat: document.getElementById('m_desc').value,
+                Anh_Bia: document.getElementById('m_poster').value
+            };
+
+            if(!payload.Ten_Phim) return alert("Vui lòng nhập tên phim!");
+
+            if (isEdit) {
+                const index = dbData.Phim.findIndex(m => m.Ma_Phim === parseInt(id));
+                if (index !== -1) dbData.Phim[index] = payload;
+            } else {
+                dbData.Phim.push(payload);
+            }
+
+            alert(isEdit ? "Cập nhật thành công vào bộ nhớ tạm!" : "Thêm phim mới thành công vào bộ nhớ tạm!");
+            closeModal();
+            fetchMovies();
+        }
+
+        function deleteMovie(id) {
+            if(!confirm("Bạn có chắc chắn muốn xoá bộ phim này khỏi bộ nhớ?")) return;
+            const index = dbData.Phim.findIndex(m => m.Ma_Phim === id);
+            if (index !== -1) {
+                dbData.Phim.splice(index, 1);
+                alert("Đã xoá phim thành công!");
+                fetchMovies();
+            }
+        }
+
+        // ================= XỬ LÝ QUẢN LÝ PHÒNG CHIẾU =================
+        function fetchPhongChieu() {
+            const data = dbData.Phong_Chieu;
+            document.getElementById('phongChieuTableBody').innerHTML = data.map(p => `
+                <tr>
+                    <td style="color:#e50914; font-weight:bold;">#${p.Ma_Phong}</td>
+                    <td style="font-weight:bold;">${p.Ten_Phong}</td>
+                    <td style="color:#aaa;">${p.Loai_Phong || 'Tiêu chuẩn'}</td>
+                    <td style="color:#ffc107; font-weight:bold;">${p.Tong_So_Ghe} Ghế</td>
+                    <td style="text-align: center;">
+                        <button class="btn-action btn-edit" onclick="openPhongModal(${p.Ma_Phong}, '${p.Ten_Phong}', '${p.Loai_Phong || 'Tiêu chuẩn'}', ${p.Tong_So_Ghe})">Sửa</button>
+                        <button class="btn-action btn-delete" onclick="deletePhong(${p.Ma_Phong})">Xóa</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openPhongModal(id = '', ten = '', loaiphong = 'Tiêu chuẩn', soghe = 100) {
+            document.getElementById('phongModal').classList.remove('hidden');
+            document.getElementById('phongModalTitle').innerText = id ? "SỬA PHÒNG CHIẾU" : "THÊM PHÒNG CHIẾU";
+            document.getElementById('p_id').value = id;
+            document.getElementById('p_ten').value = ten;
+            document.getElementById('p_loaiphong').value = loaiphong;
+            document.getElementById('p_tongsoghe').value = soghe;
+        }
+
+        function closePhongModal() {
+            document.getElementById('phongModal').classList.add('hidden');
+        }
+
+        function savePhong() {
+            const id = document.getElementById('p_id').value;
+            const payload = { 
+                Ma_Phong: id ? parseInt(id) : (dbData.Phong_Chieu.length > 0 ? Math.max(...dbData.Phong_Chieu.map(p => p.Ma_Phong)) + 1 : 1),
+                Ten_Phong: document.getElementById('p_ten').value,
+                Loai_Phong: document.getElementById('p_loaiphong').value,
+                Tong_So_Ghe: parseInt(document.getElementById('p_tongsoghe').value)
+            };
+            if (!payload.Ten_Phong || !payload.Tong_So_Ghe) return alert("Vui lòng nhập đủ thông tin phòng!");
+
+            if (id) {
+                const index = dbData.Phong_Chieu.findIndex(p => p.Ma_Phong === parseInt(id));
+                if (index !== -1) dbData.Phong_Chieu[index] = payload;
+            } else {
+                dbData.Phong_Chieu.push(payload);
+            }
+            alert("Thành công!");
+            closePhongModal();
+            fetchPhongChieu();
+        }
+
+        function deletePhong(id) {
+            if (!confirm("Bạn có chắc muốn xóa phòng chiếu này?")) return;
+            const index = dbData.Phong_Chieu.findIndex(p => p.Ma_Phong === id);
+            if (index !== -1) {
+                dbData.Phong_Chieu.splice(index, 1);
+                alert("Xóa thành công!"); 
+                fetchPhongChieu(); 
+            }
+        }
+
+        // ================= XỬ LÝ QUẢN LÝ SUẤT CHIẾU =================
+        function fetchSuatChieu() {
+            const data = dbData.Suat_Chieu;
+            const tbody = document.getElementById('suatChieuTableBody');
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #aaa;">Chưa có dữ liệu suất chiếu</td></tr>';
+                return;
+            }
+
+            let htmlContent = '';
+            data.forEach(s => {
+                let formatTime = "Chưa cập nhật";
+                if (s.Thoi_Gian_Bat_Dau) {
+                    const dateObj = new Date(s.Thoi_Gian_Bat_Dau);
+                    formatTime = dateObj.toLocaleString('vi-VN', { 
+                        day: '2-digit', month: '2-digit', year: 'numeric', 
+                        hour: '2-digit', minute: '2-digit' 
+                    });
+                }
+
+                const giaVe = s.Gia_Ve ? s.Gia_Ve : 0;
+                const formatGia = new Intl.NumberFormat('vi-VN').format(giaVe);
+
+                // Tìm tên phim từ Ma_Phim
+                const phimObj = dbData.Phim.find(p => p.Ma_Phim === s.Ma_Phim);
+                const tenPhim = phimObj ? phimObj.Ten_Phim : 'Phim #' + s.Ma_Phim;
+
+                // Tìm tên phòng từ Ma_Phong
+                const phongObj = dbData.Phong_Chieu.find(p => p.Ma_Phong === s.Ma_Phong);
+                const tenPhong = phongObj ? phongObj.Ten_Phong : 'Phòng #' + s.Ma_Phong;
+
+                htmlContent += `
+                    <tr>
+                        <td style="font-weight:bold; color:#e50914;">#${s.Ma_Suat}</td>
+                        <td style="font-weight:bold;">${tenPhim}</td>
+                        <td>${tenPhong}</td>
+                        <td style="color:#00e5ff;">${formatTime}</td>
+                        <td style="color:#ffc107; font-weight:bold;">${formatGia} đ</td>
+                        <td style="text-align: center;">
+                            <button class="btn-action btn-edit" onclick="openSuatModal(${s.Ma_Suat}, ${s.Ma_Phim}, ${s.Ma_Phong}, '${s.Thoi_Gian_Bat_Dau}', ${s.Gia_Ve})">Sửa</button>
+                            <button class="btn-action btn-delete" onclick="deleteSuat(${s.Ma_Suat})">Xóa</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = htmlContent;
+        }
+
+        function openSuatModal(id = '', maphim = '', maphong = '', thoigian = '', giave = '') {
+            document.getElementById('suatModal').classList.remove('hidden');
+            document.getElementById('suatModalTitle').innerText = id ? "SỬA SUẤT CHIẾU" : "THÊM SUẤT CHIẾU";
+            
+            document.getElementById('s_id').value = id;
+            document.getElementById('s_maphim').value = maphim;
+            document.getElementById('s_maphong').value = maphong;
+            
+            if (thoigian) {
+                let dateObj = new Date(thoigian);
+                dateObj.setMinutes(dateObj.getMinutes() - dateObj.getTimezoneOffset());
+                document.getElementById('s_thoigian').value = dateObj.toISOString().slice(0, 16);
+            } else {
+                document.getElementById('s_thoigian').value = '';
+            }
+            
+            document.getElementById('s_giave').value = giave;
+        }
+
+        function closeSuatModal() {
+            document.getElementById('suatModal').classList.add('hidden');
+        }
+
+        function saveSuat() {
+            const id = document.getElementById('s_id').value;
+            const payload = {
+                Ma_Suat: id ? parseInt(id) : (dbData.Suat_Chieu.length > 0 ? Math.max(...dbData.Suat_Chieu.map(s => s.Ma_Suat)) + 1 : 1),
+                Ma_Phim: parseInt(document.getElementById('s_maphim').value),
+                Ma_Phong: parseInt(document.getElementById('s_maphong').value),
+                Thoi_Gian_Bat_Dau: document.getElementById('s_thoigian').value,
+                Thoi_Gian_Chieu: document.getElementById('s_thoigian').value,
+                Gia_Ve: parseInt(document.getElementById('s_giave').value)
+            };
+
+            if (!payload.Ma_Phim || !payload.Ma_Phong || !payload.Thoi_Gian_Bat_Dau || !payload.Gia_Ve) {
+                return alert("Vui lòng điền đủ thông tin!");
+            }
+
+            if (id) {
+                const index = dbData.Suat_Chieu.findIndex(s => s.Ma_Suat === parseInt(id));
+                if (index !== -1) dbData.Suat_Chieu[index] = payload;
+            } else {
+                dbData.Suat_Chieu.push(payload);
+            }
+            alert(id ? "Cập nhật suất chiếu thành công!" : "Thêm suất chiếu thành công!");
+            closeSuatModal();
+            fetchSuatChieu(); 
+        }
+
+        function deleteSuat(id) {
+            if (!confirm("Bạn có chắc muốn xóa suất chiếu này?")) return;
+            const index = dbData.Suat_Chieu.findIndex(s => s.Ma_Suat === id);
+            if (index !== -1) {
+                dbData.Suat_Chieu.splice(index, 1);
+                alert("Xóa thành công!"); 
+                fetchSuatChieu(); 
+            }
+        }
+
+        // ================= XỬ LÝ QUẢN LÝ VÉ =================
+        async function fetchVe() {
+            try {
+                // 1. Chỉ đọc file ve.json 1 lần duy nhất lúc mới tải.
+                if (!dbData.Ve || dbData.Ve.length === 0) {
+                    const response = await fetch('ve.json');
+                    if (response.ok) {
+                        dbData.Ve = await response.json(); 
+                    }
+                }
+
+                // 2. Gộp thêm vé từ LocalStorage (vé khách vừa đặt trên web user.html)
+                let localTickets = JSON.parse(localStorage.getItem('danh_sach_ve')) || [];
+                let allTickets = [...dbData.Ve, ...localTickets];
+
+                const tbody = document.getElementById('veTableBody') || document.querySelector('#ve table tbody');
+                if (!tbody) return;
+
+                tbody.innerHTML = ''; 
+
+                if (allTickets.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Chưa có dữ liệu vé</td></tr>';
+                    return;
+                }
+
+                // 3. Render dữ liệu
+                allTickets.forEach((v, index) => {
+                    // Cứu cánh "Bao xài": Khớp mọi tên biến từ ve.json và LocalStorage
+                    let idVe = v.id || v.Ma_Ve || index + 1;
+                    let khachHang = v.khach_hang || v.Khach_Hang || 'Khách vãng lai';
+                    let tenPhim = v.ten_phim || v.Ten_Phim || 'Chưa cập nhật';
+                    let gia = v.gia_ve || v.Gia_Ve || 0;
+                    
+                    let suat = v.suất_chiếu || v.Suat_Chieu || '';
+                    let ngay = v.ngay || v.Ngay_Dat || '';
+                    let thoiGianHienThi = (suat && ngay) 
+                        ? `<span class="status-badge" style="background:#e50914;color:#fff;">${suat}</span> | ${ngay}` 
+                        : (v.Thoi_Gian ? new Date(v.Thoi_Gian).toLocaleString('vi-VN') : 'N/A');
+
+                    const formatGia = gia ? new Intl.NumberFormat('vi-VN').format(gia) + ' đ' : '0 đ';
+                    let trangThai = v.Trang_Thai || v.trang_thai || 'Đã thanh toán';
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td style="color:#e50914; font-weight:bold;">#${idVe}</td>
+                            <td><strong>${khachHang}</strong></td>
+                            <td>${tenPhim}</td>
+                            <td>${thoiGianHienThi}</td>
+                            <td style="color:#28a745; font-weight:bold;">${formatGia}</td>
+                            <td><span class="status-badge status-success">${trangThai}</span></td>
+                            <td>
+                                <button class="btn-action btn-edit" onclick="editTicket('${idVe}')">Sửa</button>
+                                <button class="btn-action btn-delete" onclick="deleteTicket('${idVe}')">Xóa</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (error) {
+                console.error("Lỗi khi tải danh sách vé:", error);
+            }
+        }
+
+        // ================= HÀM SỬA VÉ =================
+        function editTicket(id) {
+            // Lấy cả vé trong db và vé trong LocalStorage để sửa
+            let localTickets = JSON.parse(localStorage.getItem('danh_sach_ve')) || [];
+            let allTickets = [...dbData.Ve, ...localTickets];
+            
+            // Ép kiểu ID thành chuỗi để so sánh cho an toàn
+            const ticket = allTickets.find(v => String(v.id || v.Ma_Ve) === String(id));
+            
+            if (ticket) {
+                let kh = ticket.khach_hang || ticket.Khach_Hang;
+                let ten = ticket.ten_phim || ticket.Ten_Phim;
+                let gia = ticket.gia_ve || ticket.Gia_Ve;
+                let tt = ticket.trang_thai || ticket.Trang_Thai || 'Đã thanh toán';
+                
+                openVeModal(id, kh, ten, gia, tt);
+            } else {
+                alert("Không tìm thấy thông tin vé!");
+            }
+        }
+
+        function openVeModal(id = '', makh = '', masuat = '', maghe = '', trangthai = 'Đã thanh toán') {
+            document.getElementById('veModal').classList.remove('hidden');
+            document.getElementById('veModalTitle').innerText = id ? "SỬA THÔNG TIN VÉ" : "ĐẶT VÉ MỚI";
+            
+            document.getElementById('v_id').value = id;
+            document.getElementById('v_makh').value = makh; 
+            document.getElementById('v_masuat').value = masuat; 
+            document.getElementById('v_maghe').value = maghe; 
+            document.getElementById('v_trangthai').value = trangthai;
+        }
+
+        function closeVeModal() {
+            document.getElementById('veModal').classList.add('hidden');
+        }
+
+        // ================= HÀM LƯU / THÊM MỚI VÉ =================
+        function saveVe() {
+            const id = document.getElementById('v_id').value;
+            const makh = document.getElementById('v_makh').value;
+            const masuat = document.getElementById('v_masuat').value;
+            const maghe = document.getElementById('v_maghe').value;
+            const trangthai = document.getElementById('v_trangthai').value;
+
+            if (!makh || !masuat || !maghe) {
+                return alert("Vui lòng điền đầy đủ thông tin vé!");
+            }
+
+            // Tạo payload chuẩn theo định dạng file ve.json của bạn
+            const payload = {
+                id: id ? parseInt(id) : (dbData.Ve.length > 0 ? Math.max(...dbData.Ve.map(v => v.id || 0)) + 1 : 1),
+                khach_hang: makh, 
+                ten_phim: masuat, 
+                gia_ve: parseInt(maghe) || 0,
+                trang_thai: trangthai,
+                suất_chiếu: "19:00", // Gán mặc định nếu thêm mới
+                ngay: new Date().toISOString().split('T')[0]
+            };
+
+            if (id) {
+                // Sửa vé: Tìm xem nó nằm trong dbData hay LocalStorage
+                let indexDb = dbData.Ve.findIndex(v => String(v.id) === String(id));
+                if (indexDb !== -1) {
+                    // Giữ lại suất và ngày cũ
+                    payload.suất_chiếu = dbData.Ve[indexDb].suất_chiếu;
+                    payload.ngay = dbData.Ve[indexDb].ngay;
+                    dbData.Ve[indexDb] = payload;
+                } else {
+                    // Tìm trong LocalStorage
+                    let localTickets = JSON.parse(localStorage.getItem('danh_sach_ve')) || [];
+                    let indexLocal = localTickets.findIndex(v => String(v.Ma_Ve) === String(id));
+                    if (indexLocal !== -1) {
+                        localTickets[indexLocal].Khach_Hang = makh;
+                        localTickets[indexLocal].Ten_Phim = masuat;
+                        localTickets[indexLocal].Gia_Ve = parseInt(maghe);
+                        localTickets[indexLocal].Trang_Thai = trangthai;
+                        localStorage.setItem('danh_sach_ve', JSON.stringify(localTickets));
+                    }
+                }
+            } else {
+                // Thêm vé mới
+                dbData.Ve.push(payload);
+            }
+
+            alert(id ? "Cập nhật vé thành công!" : "Đặt vé mới thành công!");
+            closeVeModal();
+            fetchVe(); 
+        }
+
+        // ================= HÀM XÓA VÉ =================
+        function deleteTicket(id) {
+            if(!confirm("Hủy và xóa vé này khỏi hệ thống?")) return;
+            
+            let daXoa = false;
+
+            // Xóa trong dbData
+            const indexDb = dbData.Ve.findIndex(v => String(v.id) === String(id));
+            if (indexDb !== -1) {
+                dbData.Ve.splice(indexDb, 1);
+                daXoa = true;
+            }
+
+            // Xóa trong LocalStorage (nếu có)
+            let localTickets = JSON.parse(localStorage.getItem('danh_sach_ve')) || [];
+            const indexLocal = localTickets.findIndex(v => String(v.Ma_Ve) === String(id));
+            if (indexLocal !== -1) {
+                localTickets.splice(indexLocal, 1);
+                localStorage.setItem('danh_sach_ve', JSON.stringify(localTickets));
+                daXoa = true;
+            }
+
+            if (daXoa) {
+                alert("Đã xóa vé thành công!"); 
+                fetchVe(); 
+            } else {
+                alert("Lỗi: Không tìm thấy vé để xóa!");
+            }
+        }
+
+        // Tự khởi chạy
+        window.onload = loadData;
+    </script>
+</body>
+</html>
