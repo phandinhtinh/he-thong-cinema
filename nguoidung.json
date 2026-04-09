@@ -1,6 +1,7 @@
 {
   "Nhan_Vien": [
-    { "Ma_NV": 1, "Ho_Ten": "Admin Hệ Thống", "Ten_Dang_Nhap": "admin", "Mat_Khau": "123456", "Vai_Tro": "Quản lý" }
+    { "Ma_NV": 1, "Ho_Ten": "Admin Hệ Thống", "Ten_Dang_Nhap": "admin", "Mat_Khau": "123456", "Vai_Tro": "Quản lý" },
+    { "Ma_NV": 2, "Ho_Ten": "Staff", "Ten_Dang_Nhap": "staff", "Mat_Khau": "123456", "Vai_Tro": "Nhân viên" }
   ],
   "Khach_Hang": [
     { "Ma_KH": 1, "Ho_Ten": "Nguyễn Tuấn Hành Động", "Ten_Dang_Nhap": "kh_action1", "Mat_Khau": "123456", "SDT": "0900000001", "Email": "a1@gmail.com" },

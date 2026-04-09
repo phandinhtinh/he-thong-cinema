@@ -103,7 +103,7 @@
     <div class="login-card">
         <div class="icon">🎬</div>
         <h2>CINEMA LOGIN</h2>
-        <input type="text" id="user" placeholder="Tên đăng nhập (admin / kh_action1...)">
+        <input type="text" id="user" placeholder="Tên đăng nhập (admin / staff / kh_...)">
         <input type="password" id="pass" placeholder="Mật khẩu">
         <button onclick="handleLogin()">ĐĂNG NHẬP</button>
         <div class="footer-text">Hệ Thống Quản Lý Rạp Chiếu Phim V2.0</div>
@@ -117,22 +117,20 @@
         const userInput = document.getElementById('user');
         const passInput = document.getElementById('pass');
 
-        // Hàm kiểm tra phím Enter
         function handleEnterKey(event) {
             if (event.key === "Enter") {
-                handleLogin(); // Tự động gọi hàm đăng nhập
+                handleLogin(); 
             }
         }
 
-        // Gắn sự kiện lắng nghe phím cho cả ô Tài khoản và Mật khẩu
         userInput.addEventListener("keypress", handleEnterKey);
         passInput.addEventListener("keypress", handleEnterKey);
     });
 
     // ==============================================================
-    // 2. TÍNH NĂNG: XỬ LÝ ĐĂNG NHẬP GIẢ LẬP (KHÔNG CẦN BACKEND)
+    // 2. TÍNH NĂNG: XỬ LÝ ĐĂNG NHẬP (ĐỌC TỪ FILE NGUOIDUNG.JSON)
     // ==============================================================
-    function handleLogin() {
+    async function handleLogin() {
         const username = document.getElementById('user').value.trim();
         const password = document.getElementById('pass').value.trim();
 
@@ -141,26 +139,67 @@
             return;
         }
 
-        // CHUẨN HÓA: Dùng LocalStorage lưu thông tin thay cho fetch API
-        // Phân loại: Nếu gõ "admin" -> Vào trang quản lý | Gõ chữ khác -> Vào trang khách hàng
-        
-        if (username.toLowerCase() === 'admin') {
-            // LƯU THÔNG TIN ADMIN
-            localStorage.setItem('cinema_user', 'Quản Trị Viên Hệ Thống');
-            localStorage.setItem('cinema_username', 'admin'); 
-            localStorage.setItem('userRole', 'Quản lý');
-            
-            alert("Đăng nhập quyền Admin thành công!");
-            window.location.href = 'admin.html'; 
-            
-        } else {
-            // LƯU THÔNG TIN KHÁCH HÀNG (Dùng để chạy AI gợi ý và Lịch sử vé)
-            localStorage.setItem('cinema_user', 'Khách Hàng VIP');
-            localStorage.setItem('cinema_username', username); 
-            localStorage.setItem('userRole', 'Khách hàng');
-            
-            alert("Đăng nhập thành công! Chào mừng " + username);
-            window.location.href = 'user.html'; 
+        try {
+            // Đọc dữ liệu từ file nguoidung.json
+            const response = await fetch('./nguoidung.json');
+            if (!response.ok) throw new Error("Không tìm thấy file nguoidung.json");
+            const data = await response.json();
+
+            let loggedInUser = null;
+            let role = '';
+
+            // 1. Quét tìm trong danh sách Nhân Viên (Bao gồm Admin và Staff)
+            if (data.Nhan_Vien) {
+                const nv = data.Nhan_Vien.find(u => u.Ten_Dang_Nhap === username && u.Mat_Khau === password);
+                if (nv) {
+                    loggedInUser = nv;
+                    role = nv.Vai_Tro; // Lấy chức danh ("Quản lý" hoặc "Nhân viên")
+                }
+            }
+
+            // 2. Nếu không phải nhân viên, quét tiếp trong danh sách Khách Hàng
+            if (!loggedInUser && data.Khach_Hang) {
+                const kh = data.Khach_Hang.find(u => u.Ten_Dang_Nhap === username && u.Mat_Khau === password);
+                if (kh) {
+                    loggedInUser = kh;
+                    role = "Khách hàng"; // Mặc định gán vai trò Khách hàng
+                }
+            }
+
+            // 3. Xử lý logic rẽ nhánh sau khi tìm thấy User
+            if (loggedInUser) {
+                // Lưu thông tin vào bộ nhớ trình duyệt
+                localStorage.setItem('cinema_user', loggedInUser.Ho_Ten);
+                localStorage.setItem('cinema_username', loggedInUser.Ten_Dang_Nhap); 
+                localStorage.setItem('userRole', role);
+                
+                // Rẽ nhánh tới đúng trang làm việc
+                if (role === "Quản lý") {
+                    alert("Đăng nhập thành công! Xin chào Quản lý " + loggedInUser.Ho_Ten);
+                    window.location.href = 'admin.html';
+                } else if (role === "Nhân viên") {
+                    alert("Đăng nhập thành công! Xin chào Nhân viên " + loggedInUser.Ho_Ten);
+                    window.location.href = 'staff.html';
+                } else {
+                    alert("Đăng nhập thành công! Chào mừng " + loggedInUser.Ho_Ten);
+                    window.location.href = 'user.html';
+                }
+            } else {
+                // Nhập sai tài khoản hoặc mật khẩu
+                alert("Tên đăng nhập hoặc mật khẩu không chính xác!");
+            }
+
+        } catch (error) {
+            console.error("Lỗi khi đăng nhập:", error);
+            // Phương án dự phòng (Fallback) nếu chạy code không qua Live Server bị lỗi CORS
+            if (username === 'admin' && password === '123456') {
+                localStorage.setItem('cinema_user', 'Admin Khẩn Cấp');
+                localStorage.setItem('cinema_username', 'admin'); 
+                localStorage.setItem('userRole', 'Quản lý');
+                window.location.href = 'admin.html';
+            } else {
+                alert("Lỗi hệ thống: Không thể kết nối cơ sở dữ liệu. Vui lòng chạy trang trên Live Server!");
+            }
         }
     }
     </script>

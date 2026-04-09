@@ -549,7 +549,8 @@
 
 
         // --- 6. HỆ THỐNG ĐẶT VÉ (BƯỚC 1: Chọn Suất & Ghế) ---
-        function openBookingStep1(maPhim) {
+        // Thêm chữ "async" ở đầu để hàm có thể chờ tải file ve.json
+        async function openBookingStep1(maPhim) {
             const user = localStorage.getItem('cinema_username');
             if (!user) return openAuthModal();
 
@@ -572,20 +573,50 @@
                 return `<button class="time-btn" onclick="selectTime(this, '${timeStr}', '${s.Ten_Phong}')">${timeStr}</button>`;
             }).join('');
 
-            // Gen 32 Ghế ngẫu nhiên
+            // ==========================================
+            // ĐOẠN MỚI: TÌM CÁC GHẾ ĐÃ BỊ ĐẶT CỦA PHIM NÀY
+            // ==========================================
+            let allTickets = JSON.parse(localStorage.getItem('danh_sach_ve')) || [];
+            try {
+                const res = await fetch('./ve.json');
+                if (res.ok) {
+                    const data = await res.json();
+                    const veMau = Array.isArray(data) ? data : (data.Ve || []);
+                    allTickets = [...veMau, ...allTickets];
+                }
+            } catch (e) { console.log("Không tải được ve.json"); }
+
+            // Chỉ lấy vé của phim đang chọn và gom tất cả mã ghế vào 1 mảng
+            let gheDaDat = [];
+            let veCuaPhimNay = allTickets.filter(v => v.Ten_Phim === phim.Ten_Phim);
+            
+            veCuaPhimNay.forEach(ve => {
+                let gheStr = ve.Danh_Sach_Ghe || ve.Ghe || ve.So_Ghe || "";
+                if (gheStr.trim() !== "") {
+                    // Tách chuỗi "G1, G2" thành mảng ['G1', 'G2'] và gộp vào danh sách đen
+                    let mangGhe = gheStr.split(',').map(g => g.trim());
+                    gheDaDat = gheDaDat.concat(mangGhe);
+                }
+            });
+
+            // ==========================================
+            // GEN 32 GHẾ (Kiểm tra dữ liệu thật)
+            // ==========================================
             const seatMap = document.getElementById('seatMap');
             seatMap.innerHTML = '';
             for(let i=1; i<=32; i++) {
                 let seatId = 'G' + i;
                 let isVip = (i > 8 && i <= 24);
                 let price = isVip ? 90000 : 75000;
-                let isBooked = Math.random() < 0.2; // 20% khả năng ghế đã bị đặt
+                
+                // KIỂM TRA: Nếu ghế này nằm trong mảng 'gheDaDat' -> Biến thành ghế đỏ!
+                let isBooked = gheDaDat.includes(seatId);
 
                 let cls = 'seat';
                 if (isVip) cls += ' vip';
                 if (isBooked) cls += ' booked';
 
-                let clickEvt = isBooked ? `onclick="alert('Ghế đã có người đặt!')"` : `onclick="toggleSeat(this, '${seatId}', ${price})"`;
+                let clickEvt = isBooked ? `onclick="alert('Ghế này đã có người đặt! Vui lòng chọn ghế khác.')"` : `onclick="toggleSeat(this, '${seatId}', ${price})"`;
                 seatMap.innerHTML += `<div class="${cls}" ${clickEvt}>${seatId}</div>`;
             }
 
